@@ -39,52 +39,26 @@ df_for_map <- ranking_df %>%
   st_as_sf()
 
 # Function to generate maps for each specified ranking column
-create_maps <- function(df_for_map, columns) {
-  # Check if the input is an sf object
-  if (!inherits(df_for_map, "sf")) {
-    stop("Need (sf) object")
-  }
-  
-#  format column names
-  format_title <- function(name) {
-    name %>%
-      gsub("_", " ", .) %>%
-      tools::toTitleCase()
-  }
-  
-  # Loop through each column 
-  for (col in columns) {
-    if (!col %in% names(df_for_map)) {
-      warning(paste("Column", col, "not found"))
-      next
-    }
-    
-    # Format the title
-    formatted_title <- format_title(col)
-    
-    
-    # Generate the map
+create_maps <- function(df_for_map, metric) {
+
     p_map <- ggplot(data = df_for_map) +
-      geom_sf(aes(geometry = geom, fill = !!rlang::sym(col)), color = "white") +
-      geom_sf_text(aes(geometry = geom, label = !!rlang::sym(col)), check_overlap = TRUE, size = 2, color = "white") +
+      geom_sf(aes(geometry = geom, fill = !!rlang::sym(metric)), color = "white") +
+      geom_sf_text(aes(geometry = geom, label = !!rlang::sym(metric)), 
+                   check_overlap = TRUE, size = 2, color = "white") +
       scale_fill_viridis_c(option = "D", direction = -1) +  
-      labs(title = paste("Ranking by", formatted_title)) +
+      labs(title = paste("Ranking by", metric)) +
       theme_minimal() +
       theme(
         axis.title.x = element_blank(),   
         axis.title.y = element_blank(),  
         axis.text.x = element_blank(),  
         axis.text.y = element_blank(),
-        legend.position = "none"
-      )
+        legend.position = "none")
     
-    # Print the map
-    print(p_map)
+    return(p_map)
   }
-}
 
-create_maps(df_for_map, c("Other Fatalities"))
-
+create_maps(df_for_map, "Congestion Hours") 
 
 ####Bump chart function####
 

@@ -54,13 +54,27 @@ shinyServer(function(input, output, session) {
     
     # Check if the selected metric does not have submetrics
     if (input$metric %in% c("Overall Score", "Bridges", "Congestion Hours")) {
-      # Call the function for metrics without submetrics
       no_submetric_ranking_plots(ranking_df, input$metric)
     } else {
       req(input$submetric)
       submetric <- input$submetric
-      # Generate the interactive plot for metrics with submetrics
+      # plot for metrics with submetrics
       create_ranking_plot(ranking_df, input$metric, submetric)
     }
   })
+  
+  output$mapPlot <- renderPlot({
+    req(input$map_metric)
+    
+    #check of df_for_map loaded right
+    if(!inherits(df_for_map, "sf")){
+      stop("df_for_map is not an sf object")
+    }
+    
+    # Generate the map plot based on the selected map metric
+    p_map <- create_maps(df_for_map, input$map_metric)
+    p_map
+    #ggplotly(p_map)
+  })
+  
 })
