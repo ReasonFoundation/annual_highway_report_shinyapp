@@ -9,6 +9,7 @@ library(plotly)
 library(viridisLite)
 library(maps)
 library(sf)
+library(wesanderson)
 
 ####Preparing data####
 url <- "https://raw.githubusercontent.com/thuy2020/Annual-Highway-Report/report_2022/output/AHR_data_2022.xlsx"
@@ -42,6 +43,7 @@ df_for_map <- ranking_df %>%
  st_transform(crs = 4326) 
 
 
+wes_palette <- wes_palette("Darjeeling1", n = 5, type = "continuous")
 
 # Function to generate maps for each specified ranking column
 create_maps <- function(df_for_map, metric) {
@@ -50,8 +52,9 @@ create_maps <- function(df_for_map, metric) {
       geom_sf(aes(geometry = geom, fill = !!rlang::sym(metric)), color = "white") +
       geom_sf_text(aes(geometry = geom, label = !!rlang::sym(metric)), 
                    check_overlap = TRUE, size = 3, color = "white") +
-      scale_fill_viridis_c(option = "D", direction = -1) +  
-      labs(title = paste("Ranking by", metric)) +
+      #scale_fill_viridis_c(option = "D", direction = -1) +  
+      scale_fill_gradientn(colors = wes_palette) +  
+      labs(title = paste("Rankings by", metric)) +
       theme_minimal() +
       theme(
         axis.title.x = element_blank(),   
@@ -63,7 +66,7 @@ create_maps <- function(df_for_map, metric) {
     return(p_map)
   }
 
-create_maps(df_for_map, "Congestion Hours") 
+create_maps(df_for_map, "Overall Score") 
 
 ####Bump chart function####
 
@@ -97,9 +100,9 @@ create_ranking_plot <- function(ranking_df, metric, submetric) {
     scale_color_manual(values = c("Top 10" = line_color, "Others" = "gray")) +
     scale_size_manual(values = c("Top 10" = 0.5, "Others" = 0.1)) +
     theme_minimal() +
-    labs(title = paste0("State Rankings by ", str_to_title(metric)),
+    labs(title = paste("Rankings by", str_to_title(metric)),
          x = "",
-         y = "Ranking") +
+         y = "") +
     theme(
       legend.position = "none",
       axis.text.x = element_text(vjust = 0.5, hjust = 1)
@@ -141,7 +144,7 @@ no_submetric_ranking_plots <- function(ranking_df, metrics) {
       geom_col(fill = "gray", width = 0.1) +
       geom_point(size = 3, color = point_color[metric]) +
       theme_minimal() +
-      labs(title = paste("Ranking of US States -", metric),
+      labs(title = paste("Rankings by", metric),
            x = "Ranking",
            y = "")+
       theme(axis.text.y = element_text(size = 6))

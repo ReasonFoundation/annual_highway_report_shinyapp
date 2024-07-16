@@ -1,4 +1,12 @@
 /* styles.css */
+/* Navbar background and border removal */
+.navbar-custom {
+  background-color: transparent;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+}
 
 /* Ensure the sidebar is 1/4 of the page width */
 .sidebar {
@@ -20,8 +28,10 @@ h1 {
   color: #333333;  
 }
 
-.form-control {
-  margin-bottom: 10px;  
+/* Apply Wes Anderson color palette to form controls */
+.form-control, .shiny-input-container input, .shiny-input-container select {
+  margin-bottom: 10px;
+  background-color: #FAEFD1;  /* Example color from Wes Anderson palette */
 }
 
 @media screen and (max-width: 768px) {

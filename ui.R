@@ -3,12 +3,24 @@ library(plotly)
 
 # Define the user interface
 shinyUI(fluidPage(
-  includeCSS("styles.css"),  # Include custom CSS if any
-  titlePanel("State Rankings by Category"),
+  tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
+  ),  
+  # Add the navbar
+  tags$nav(
+    class = "navbar navbar-default navbar-custom",
+    tags$div(class = "container-fluid",
+             tags$div(class = "navbar-left",
+                      tags$a(href = "#", tags$img(src = "logo.png", height = "40px"))
+             ),
+             tags$div(class = "navbar-title", "")
+    )
+  ),
   
-  # Existing section for State Rankings by Category
+  # State Rankings by Category
   fluidRow(
     column(12,  # Use 12 columns for full width
+           h3("State Rankings by Category"),
            sidebarLayout(
              sidebarPanel(
                selectInput("metric", "Metric:", choices = c("Overall Score", 
@@ -48,7 +60,7 @@ shinyUI(fluidPage(
                                                                     "Other Disbursement"))
              ),
              mainPanel(
-               plotOutput("mapPlot", height = "600px")
+               plotOutput("mapPlot", height = "400px")
              )
            )
     )
