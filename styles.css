@@ -1,0 +1,25 @@
+/* styles.css */
+
+/* Ensure the sidebar is 1/4 of the page width */
+.sidebar {
+  width: 20% !important;
+  float: left;
+}
+
+.main-panel {
+  width: 80% !important;
+  float: right;
+  overflow: hidden;
+}
+
+body {
+  background-color: #f5f5f5;  
+}
+
+h1 {
+  color: #333333;  
+}
+
+.form-control {
+  margin-bottom: 10px;  
+}
