@@ -36,7 +36,12 @@ df_for_map <- ranking_df %>%
   filter(state != "United States") %>% 
   mutate(state = str_to_lower(state)) %>% 
   left_join(states_map, by = c("state" = "ID")) %>% 
-  st_as_sf()
+  st_as_sf() %>% 
+  #using a projected coordinate system (not longitude/latitude)
+  #(Coordinate Reference System WGS84 (crs = 4326).
+ st_transform(crs = 4326) 
+
+
 
 # Function to generate maps for each specified ranking column
 create_maps <- function(df_for_map, metric) {
@@ -44,7 +49,7 @@ create_maps <- function(df_for_map, metric) {
     p_map <- ggplot(data = df_for_map) +
       geom_sf(aes(geometry = geom, fill = !!rlang::sym(metric)), color = "white") +
       geom_sf_text(aes(geometry = geom, label = !!rlang::sym(metric)), 
-                   check_overlap = TRUE, size = 2, color = "white") +
+                   check_overlap = TRUE, size = 3, color = "white") +
       scale_fill_viridis_c(option = "D", direction = -1) +  
       labs(title = paste("Ranking by", metric)) +
       theme_minimal() +

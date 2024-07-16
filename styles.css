@@ -23,3 +23,10 @@ h1 {
 .form-control {
   margin-bottom: 10px;  
 }
+
+@media screen and (max-width: 768px) {
+  .sidebar, .mainpanel {
+    width: 100%;
+    padding: 5px;
+  }
+}

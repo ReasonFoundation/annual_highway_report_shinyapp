@@ -65,16 +65,12 @@ shinyServer(function(input, output, session) {
   
   output$mapPlot <- renderPlot({
     req(input$map_metric)
-    
-    #check of df_for_map loaded right
-    if(!inherits(df_for_map, "sf")){
-      stop("df_for_map is not an sf object")
-    }
+  
     
     # Generate the map plot based on the selected map metric
     p_map <- create_maps(df_for_map, input$map_metric)
     p_map
-    #ggplotly(p_map)
+    
   })
   
 })
