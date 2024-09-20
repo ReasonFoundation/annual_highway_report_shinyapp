@@ -1,6 +1,8 @@
 library(shiny)
 library(plotly)
+library(DT)
 
+source("charts_tables.R")
 # Define the user interface
 shinyUI(fluidPage(
   tags$head(
@@ -23,44 +25,35 @@ shinyUI(fluidPage(
            h3("State Rankings by Category"),
            sidebarLayout(
              sidebarPanel(
-               selectInput("metric", "Metric:", choices = c("Overall Score", 
-                                                            "Disbursement", 
-                                                            "Fatalities",
-                                                            "Bridges",
-                                                            "Congestion Hours",
-                                                            "Pavement Roughness")),
-               uiOutput("submetric_ui")
+               selectInput("category", "Select Table", 
+                           choices = c(
+                             "Overall Rank", 
+                             "Highway Performance Ranking by Category",
+                             "Overall Highway Performace Ranking Trends",
+                             "State-controlled Highway Miles",
+                             "State-controlled Highway Mileage by System Width",
+                             "Capital and Bridge Disbursements", 
+                             "Maintenance Disbursements",
+                             "Administrative Disbursements",
+                             "Other Disbursements",
+                             "Percent Rural Interstate Mileage in Poor Condition",
+                             "Percent Urban Interstate Mileage In Poor Condition",
+                             "Percent Rural Other Principal Arterial Mileage In Poor Condition",
+                             "Percent Urban Other Principal Arterial Mileage In Poor Condition",
+                             "Annual Peak Hours Spent In Congestion Per Auto Commuter",
+                             "Percent Structurally Deficient Bridges",  
+                             "Fatality Rate Per 100 Million Rural Vehicle-Miles", 
+                             "Fatality Rate Per 100 Million Urban Vehicle-Miles",
+                             "Fatality Rate Per 100 Million Other Vehicle-Miles"
+                             
+                             )
+               )
              ),
              mainPanel(
-               plotlyOutput("interactivePlot", height = "auto", width = "auto")
-             )
-           )
-    )
-  ),
-  
-  # New section for Map
-  hr(),  # Add a horizontal line to separate sections
-  fluidRow(
-    column(12,
-           sidebarLayout(
-             sidebarPanel(
-               selectInput("map_metric", "Map Metric:", choices = c("Overall Score", 
-                                                                    "Bridges",
-                                                                    "Congestion Hours",
-                                                                    "Rural Fatalities",
-                                                                    "Urban Fatalities",
-                                                                    "Other Fatalities",
-                                                                    "Rural Opa Pavement Roughness",
-                                                                    "Rural Interstate Pavement Roughness",
-                                                                    "Urban Opa Pavement Roughness",
-                                                                    "Urban Interstate Pavement Roughness",
-                                                                    "Admin Disbursement",
-                                                                    "Capital Disbursement",
-                                                                    "Maintenance Disbursement",
-                                                                    "Other Disbursement"))
-             ),
-             mainPanel(
-               plotOutput("mapPlot", height = "400px")
+               tabsetPanel(
+                 tabPanel("Table", DTOutput("ranking_table")),
+                 tabPanel("Map", plotOutput("ranking_map"))
+               )
              )
            )
     )

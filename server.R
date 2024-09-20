@@ -1,76 +1,58 @@
 library(shiny)
+library(DT)
 library(ggplot2)
-library(ggbump)
-library(dplyr)
-library(stringr)
-library(plotly)
-library(readxl)
-library(httr)
-library(tidyr)
-source("charts.R")
 
-# Define the server logic
+source("charts_tables.R")  
+
+
 shinyServer(function(input, output, session) {
   
-  # Default metric
-  observe({
-    if (is.null(input$metric)) {
-      updateSelectInput(session, "metric", selected = "Overall Score")
+  # Define table mappings based on the categories in selectInput
+  category_tables <- list(
+    "Overall Rank" = table1_2_overall_score_rank,
+    "Highway Performance Ranking by Category" = table3_all_categories,
+    "Overall Highway Performace Ranking Trends" = table4_ranking_trend,
+    "State-controlled Highway Miles" = table5_state_controlled_miles, 
+    "State-controlled Highway Mileage by System Width"= table6_state_controlled_mileage_width,
+    "Capital and Bridge Disbursements"= table7_capital_disbursement, 
+    "Maintenance Disbursements"= table8_maintenance_disbursement, 
+    "Administrative Disbursements"= table9_admin_disbursement,
+    "Other Disbursements" = table10_other_disbursement,
+    "Percent Rural Interstate Mileage in Poor Condition" = table11,
+    "Percent Urban Interstate Mileage In Poor Condition" = table12,
+    "Percent Rural Other Principal Arterial Mileage In Poor Condition" = table13,
+    "Percent Urban Other Principal Arterial Mileage In Poor Condition" = table14,
+    "Annual Peak Hours Spent In Congestion Per Auto Commuter" = table15,
+    "Percent Structurally Deficient Bridges" = table16,  
+    "Fatality Rate Per 100 Million Rural Vehicle-Miles" = table17,  
+    "Fatality Rate Per 100 Million Urban Vehicle-Miles" = table18,  
+    "Fatality Rate Per 100 Million Other Vehicle-Miles" = table19
+  )
+  
+  # Define map category mappings to the corresponding metric for maps
+  category_maps <- list(
+    "Overall Rank" = "Overall Score",  # Column in df_for_map
+    "Highway Performance Ranking by Category" = "Capital Disbursement Score"
+    
+  )
+  
+  # Render the table based on the selected category
+  output$ranking_table <- renderDT({
+    selected_category <- input$category
+    table_to_show <- category_tables[[selected_category]]
+    
+    table_to_show  
+  })
+  
+
+  output$ranking_map <- renderPlot({
+    selected_category <- input$category
+    
+    # Get the corresponding metric 
+    metric <- category_maps[[selected_category]]
+    
+    if (!is.null(metric)) {
+      create_maps(df_for_map, metric)  
     }
   })
-  
-  submetric_choices <- reactive({
-    switch(input$metric,
-           "Overall Score" = NULL,
-           "Bridges" = NULL,
-           "Congestion Hours" = NULL, 
-           "Pavement Roughness" = c("Urban Interstate Pavement Roughness", 
-                                    "Rural Interstate Pavement Roughness", 
-                                    "Urban Opa Pavement Roughness", 
-                                    "Rural Opa Pavement Roughness"),
-           "Disbursement" = c("Admin Disbursement", 
-                              "Capital Disbursement", 
-                              "Maintenance Disbursement", 
-                              "Other Disbursement"),
-           "Fatalities" = c("Rural Fatalities", 
-                            "Urban Fatalities", 
-                            "Other Fatalities"),
-           NULL)  # Default case
-  })
-  
-  observe({
-    updateSelectInput(session, "submetric", choices = submetric_choices())
-  })
-  
-  output$submetric_ui <- renderUI({
-    if (!is.null(input$metric) && is.null(submetric_choices())) {
-      return(NULL)
-    }
-    selectInput("submetric", "Submetric:", choices = submetric_choices())
-  })
-  
-  output$interactivePlot <- renderPlotly({
-    req(input$metric)
-    
-    # Check if the selected metric does not have submetrics
-    if (input$metric %in% c("Overall Score", "Bridges", "Congestion Hours")) {
-      no_submetric_ranking_plots(ranking_df, input$metric)
-    } else {
-      req(input$submetric)
-      submetric <- input$submetric
-      # plot for metrics with submetrics
-      create_ranking_plot(ranking_df, input$metric, submetric)
-    }
-  })
-  
-  output$mapPlot <- renderPlot({
-    req(input$map_metric)
-  
-    
-    # Generate the map plot based on the selected map metric
-    p_map <- create_maps(df_for_map, input$map_metric)
-    p_map
-    
-  })
-  
 })
