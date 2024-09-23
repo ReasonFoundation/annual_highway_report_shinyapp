@@ -5,11 +5,11 @@ library(stringr)
 library(dplyr)
 library(ggbump)
 library(plotly)
-library(maps)
 library(sf)
-library(rnaturalearth)
+library(usmap)
 library(janitor)
 library(wesanderson)
+
 
 score_rankings <- readxl::read_excel("data/AHR_data 28th_summing_components_columns.xlsx", sheet = 2)
 AHR_data <- readxl::read_excel("data/AHR_data 28th_summing_components_columns.xlsx", sheet = 1)
@@ -80,7 +80,10 @@ table5_state_controlled_miles <- AHR_data %>%
 
 
 #TABLE 6: STATE-CONTROLLED HIGHWAY MILEAGE BY SYSTEM WIDTH, 2020
-#Note: Missing "Centerline Mileage"
+#Note: 27th report says "To treat all states equally we use lane-miles as
+#opposed to center-line miles in our calculations"
+
+
 
 table6_state_controlled_mileage_width <- AHR_data %>% 
   arrange(desc(state_tot_lane_miles)) %>% 
@@ -166,8 +169,9 @@ table18 <-table_cat(urban_fatalities_per_100m_VMT)
 
 table19 <-table_cat(other_fatalities_per_100m_VMT)
 
-
 ####Maps####
+
+
 ranking_df <- score_rankings %>% 
   select(state, contains("rank")) %>% 
   pivot_longer(cols = -state, names_to = "category", values_to = "ranking") %>% 
@@ -178,73 +182,123 @@ ranking_df <- score_rankings %>%
          category = str_replace_all(category, "State Avg Congestion Hours", "Congestion Hours"),
          category = str_squish(category))   
 
-#Map function
-# states_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
-# 
-# us_states <- ne_states(country = "United States of America", 
-#                        returnclass = "sf")
-
-#Census 2022 TIGER/Line® Shapefiles: States (and equivalent). 
-#https://www.census.gov/cgi-bin/geo/shapefiles/index.php
-states_shapefile <- st_read("data/tl_2022_us_state/tl_2022_us_state.shp") %>% 
-  clean_names() %>% 
-  select(name, geometry)
-  
-alaska <- states_shapefile %>% filter(name == "Alaska")
-hawaii <- states_shapefile %>% filter(name == "Hawaii")
-mainland <- states_shapefile %>% filter(!name %in% c("Alaska", "Hawaii"))
-# Function to scale and shift geometries while preserving CRS
-scale_and_shift <- function(geometry, scale_factor, shift_x = 0, shift_y = 0) {
-  geom <- st_geometry(geometry) * scale_factor + c(shift_x, shift_y)
-  st_crs(geom) <- st_crs(geometry)  # Reassign the original CRS
-  st_geometry(geometry) <- geom
-  return(geometry)
-}
-
-# Scale and move Alaska
-alaska_transformed <- scale_and_shift(alaska, scale_factor = 0.35, 
-                                      shift_x = 2500000, shift_y = -2200000)
-
-# Scale and move Hawaii
-hawaii_transformed <- scale_and_shift(hawaii, scale_factor = 0.8, 
-                                      shift_x = 4000000, shift_y = -1200000)
-
-# Combine mainland, transformed Alaska, and Hawaii
-all_states <- rbind(mainland, alaska_transformed, hawaii_transformed)
-
 df_for_map <- ranking_df %>% 
   pivot_wider(names_from = category, values_from = ranking) %>% 
-  filter(state != "United States") %>% 
-  left_join(all_states, by = c("state" = "name"))
-  
-wes_palette <- wes_palette("Darjeeling1", n = 100, type = "continuous")
+  filter(state != "United States")
+
+data_usmap <- df_for_map %>% 
+  rename(full = state) %>% 
+  left_join(us_map()) 
+
+#wes_palette <- wes_palette("Darjeeling1", n = 100, type = "continuous")
 
 # Function to generate maps for each specified ranking column
 create_maps <- function(df_for_map, metric) {
-
- 
   
-    p_map <- ggplot(data = df_for_map) +
-      geom_sf(aes(geometry = geometry, fill = !!rlang::sym(metric)), color = "white") +
-      geom_sf_text(aes(geometry = geometry, label = !!rlang::sym(metric)), 
-                   check_overlap = TRUE, size = 3, color = "white") +
-      #scale_fill_viridis_c(option = "D", direction = -1) +  
-      scale_fill_gradientn(colors = wes_palette) +  
-      labs(title = paste("Rankings by", metric)) +
-      theme_minimal() +
-      theme(
-        axis.title.x = element_blank(),   
-        axis.title.y = element_blank(),  
-        axis.text.x = element_blank(),  
-        axis.text.y = element_blank(),
-        legend.position = "none")
+  # Extract the usmap data and convert it to an sf object
+  usmap_data <- us_map(regions = "states")
+  usmap_sf <- st_as_sf(usmap_data) %>% 
+    left_join(data_usmap, by = "full")  # Join using the correct column
+  
+  # Calculate centroids for each state
+  centroids <- st_centroid(usmap_sf)
+  
+  # Extract x and y coordinates of the centroids
+  centroids_coords <- as.data.frame(st_coordinates(centroids))
+  centroids_coords$full <- usmap_sf$full  
+  centroids_coords$metric <- usmap_sf[[metric]]  
+  
+  
+  p_map <- plot_usmap("states", data = data_usmap, values = metric,
+                      labels = TRUE, 
+                      label_color = "white") +
+    scale_fill_continuous(low = "white", high = "red", guide = "none",
+                          labels = TRUE) +
     
-    return(p_map)
-  }
+    geom_text(data = centroids_coords, 
+              aes(x = X, y = Y, label = metric), 
+              color = "black", size = 4) +
+    
+    labs(title = paste("Rankings by", metric)) + 
+    theme(panel.background = element_blank(), 
+          line = element_line(size = 0.02),
+          legend.position = "none")
+  
+  p_map <- ggplotly(p_map, width = 900, height = 720)
+  return(p_map)
+}
 
-#Bridges Score
-#Other Fatalities Score
-create_maps(df_for_map, "Overall Score") 
+# test "Overall Score"
+create_maps(df_for_map, "Overall Score")
 
 
+####Figures####
+overall_score_changes <- read.csv("data/Score_Rankings_in27threport.csv") %>% 
+  clean_names() %>% 
+  select(1:4) %>% 
+  left_join(score_rankings %>% select(state, overall_score_rank)) %>% 
+  rename(x2021 = overall_score_rank) %>% 
+  pivot_longer(cols = 2:5, names_to = "Year", values_to = "Rank") %>% 
+  mutate(Year = str_remove(Year, "x")) %>% 
+  mutate(Year = as.numeric(Year))
+
+
+# Base ggplot with grey lines by default
+
+plot_overall_changes <- overall_score_changes %>% 
+  ggplot(aes(x = Year, y = Rank, group = state, 
+             text = paste("State:", state, "<br>Rank:", Rank))) +  
+  geom_line(aes(color = case_when(
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank <= 10) %>% pull(state)) ~ "#5F8065", 
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank > 10 & Rank <= 20) %>% pull(state)) ~ "#275066",
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank > 20 & Rank <= 30) %>% pull(state)) ~ "#BB9D7A",
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank > 30 & Rank <= 40) %>% pull(state)) ~ "#944C35",
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank > 40 & Rank <= 50) %>% pull(state)) ~ "#881F24",
+    TRUE ~ "grey")), 
+    size = 0.3, alpha = 0.4) + 
+  geom_point(aes(color = case_when(
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank <= 10) %>% pull(state)) ~ "#5F8065", 
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank > 10 & Rank <= 20) %>% pull(state)) ~ "#275066",
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank > 20 & Rank <= 30) %>% pull(state)) ~ "#BB9D7A",
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank > 30 & Rank <= 40) %>% pull(state)) ~ "#944C35",
+    state %in% (overall_score_changes %>% filter(Year == 2021 & Rank > 40 & Rank <= 50) %>% pull(state)) ~ "#881F24",
+    TRUE ~ "grey")), 
+    size = 1.5, alpha = 0.6) + 
+  scale_color_identity() + 
+  theme_minimal() +
+  theme(legend.position = "none") +  
+  scale_y_reverse() + 
+  labs(title = "Overall Score Changes by State", x = "Year", y = "Rank")
+
+plot_overall_changes <- ggplotly(plot_overall_changes, tooltip = "text",
+                                 width = 900, height = 720) 
+
+
+# State-control 
+library(forcats)
+library(scales)
+
+state_control <- AHR_data %>% 
+  arrange(desc(state_tot_lane_miles)) %>% 
+  mutate(`2021 Size` = ifelse(row_number() == 1, "-", row_number() - 1)) %>% 
+  select(`2021 Size`, state, SHA_ratio, state_tot_lane_miles) %>% 
+  arrange(desc(SHA_ratio)) %>% 
+  mutate(SHA_ratio = round(SHA_ratio,2)) %>% 
+  filter(state != "United States") %>% 
+  ggplot(aes(fct_reorder(state, state_tot_lane_miles), state_tot_lane_miles, 
+         text = paste("State:", state, "<br>SHA_ratio:", SHA_ratio, 
+                      "<br>Lane Miles:", state_tot_lane_miles))) +
+          geom_col(fill = "#345B8D")+
+  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale())) +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 8),  
+    plot.margin = unit(c(1, 1, 1, 1), "cm"))+  
+  
+  labs(x = "",
+       y = "Lane Miles")
+  
+plot_state_control_lane_lines <- ggplotly(state_control, tooltip = "text", 
+                                          width = 900, height = 720) 
 

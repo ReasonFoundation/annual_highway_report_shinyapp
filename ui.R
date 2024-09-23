@@ -29,7 +29,7 @@ shinyUI(fluidPage(
                            choices = c(
                              "Overall Rank", 
                              "Highway Performance Ranking by Category",
-                             "Overall Highway Performace Ranking Trends",
+                             "Overall Highway Performance Ranking Trends",
                              "State-controlled Highway Miles",
                              "State-controlled Highway Mileage by System Width",
                              "Capital and Bridge Disbursements", 
@@ -52,7 +52,7 @@ shinyUI(fluidPage(
              mainPanel(
                tabsetPanel(
                  tabPanel("Table", DTOutput("ranking_table")),
-                 tabPanel("Map", plotOutput("ranking_map"))
+                 tabPanel("Figure", plotlyOutput("ranking_map"))
                )
              )
            )
