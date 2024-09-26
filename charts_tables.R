@@ -83,12 +83,10 @@ table5_state_controlled_miles <- AHR_data %>%
 #Note: 27th report says "To treat all states equally we use lane-miles as
 #opposed to center-line miles in our calculations"
 
-
-
 table6_state_controlled_mileage_width <- AHR_data %>% 
   arrange(desc(state_tot_lane_miles)) %>% 
   mutate(`2021 Size` = ifelse(row_number() == 1, "-", row_number() - 1)) %>% 
-  select(`2021 Size`, state, SHA_ratio, state_tot_lane_miles) %>% 
+  select(`2021 Size`, state, SHA_ratio, state_tot_lane_miles, SHA_miles) %>% 
   arrange(desc(SHA_ratio)) %>% 
   
   datatable(rownames = FALSE) %>% 
@@ -212,7 +210,7 @@ create_maps <- function(df_for_map, metric) {
   p_map <- plot_usmap("states", data = data_usmap, values = metric,
                       labels = TRUE, 
                       label_color = "white") +
-    scale_fill_continuous(low = "white", high = "red", guide = "none",
+    scale_fill_continuous(low = "#F0F9E7", high = "#207DB7", guide = "none",
                           labels = TRUE) +
     
     geom_text(data = centroids_coords, 
