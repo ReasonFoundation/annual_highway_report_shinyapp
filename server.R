@@ -66,11 +66,13 @@ shinyServer(function(input, output, session) {
     
     if(selected_category == "Overall Highway Performance Ranking Trends"){
       plot_overall_changes
-    }else if (selected_category == "State-controlled Highway Miles" | 
-              selected_category == "State-controlled Highway Mileage by System Width"){
-      plot_state_control_lane_lines
+    }else if (selected_category == "State-controlled Highway Miles"){
+      plotly_fig5_state_control
     }
     
+    else if (selected_category == "State-controlled Highway Mileage by System Width"){
+      plotly_fig6_SHA_ratio
+    }
     
     else{
     metric <- category_maps[[selected_category]]

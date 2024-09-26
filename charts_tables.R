@@ -276,13 +276,15 @@ plot_overall_changes <- ggplotly(plot_overall_changes, tooltip = "text",
 library(forcats)
 library(scales)
 
-state_control <- AHR_data %>% 
+
+fig5_state_control <- AHR_data %>% 
   arrange(desc(state_tot_lane_miles)) %>% 
   mutate(`2021 Size` = ifelse(row_number() == 1, "-", row_number() - 1)) %>% 
   select(`2021 Size`, state, SHA_ratio, state_tot_lane_miles) %>% 
   arrange(desc(SHA_ratio)) %>% 
   mutate(SHA_ratio = round(SHA_ratio,2)) %>% 
   filter(state != "United States") %>% 
+  
   ggplot(aes(fct_reorder(state, state_tot_lane_miles), state_tot_lane_miles, 
          text = paste("State:", state, "<br>SHA_ratio:", SHA_ratio, 
                       "<br>Lane Miles:", state_tot_lane_miles))) +
@@ -297,6 +299,34 @@ state_control <- AHR_data %>%
   labs(x = "",
        y = "Lane Miles")
   
-plot_state_control_lane_lines <- ggplotly(state_control, tooltip = "text", 
+plotly_fig5_state_control <- ggplotly(fig5_state_control, tooltip = "text", 
                                           width = 900, height = 720) 
+
+#Table 6 - Figure 6 table6_state_controlled_mileage_width
+
+
+fig6_SHA_ratio <- AHR_data %>% 
+  arrange(desc(state_tot_lane_miles)) %>% 
+  mutate(`2021 Size` = ifelse(row_number() == 1, "-", row_number() - 1)) %>% 
+  select(`2021 Size`, state, SHA_ratio, state_tot_lane_miles, SHA_miles) %>% 
+  mutate(SHA_ratio = round(SHA_ratio, 2)) %>% 
+  
+  ggplot(aes(fct_reorder(state, SHA_ratio), SHA_ratio, 
+             text = paste("State:", state, "<br>SHA_ratio:", SHA_ratio, 
+                          "<br>Lane Miles:", state_tot_lane_miles,
+                          "<br>Centerline Mileage:", SHA_miles))) +
+  geom_col(fill = "#008E75")+
+  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale())) +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 8),  
+    plot.margin = unit(c(1, 1, 1, 1), "cm"))+  
+  
+  labs(x = "",
+       y = "Ratio")
+
+plotly_fig6_SHA_ratio <- ggplotly(fig6_SHA_ratio, tooltip = "text", 
+                                          width = 900, height = 720)
+
 
